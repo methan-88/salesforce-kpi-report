@@ -29,11 +29,11 @@ st.markdown(
 
 # ========== KPI LABELS (friendly names) ==========
 KPI_LABELS = {
-    "dq30_pct_unit": "30+ Delinquency % (Units)",
-    "dq30_pct_$": "30+ Delinquency % (Balance)",
+    "dq30_pct_unit": "DQ-30 % (Units)",
+    "dq30_pct_$": "DQ-30 % (Balance)",
     "dq29_pot30_payment_rate_unit_per_day": "Potential 30DPD Pay Rate (Units · Daily)",
-    "dq29_pot30_payment_rate_unit_up_to_day": "Potential 30DPD Pay Rate (Units · Cumulative)",
-    "dq29_pot30_payment_rate_$_up_to_day": "Potential 30DPD Pay Rate ($ · Cumulative)",
+    "dq29_pot30_payment_rate_unit_up_to_day": "Potential 30DPD Pay Rate (Units · Up To Day)",
+    "dq29_pot30_payment_rate_$_up_to_day": "Potential 30DPD Pay Rate ($ · Up To Day)",
     "LPE": "Loans per Employee",
     "avg_loan_size": "Average Loan Size",
 }
