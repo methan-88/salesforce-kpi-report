@@ -113,6 +113,7 @@ def section_header(title: str, subtitle: str = None):
         st.caption(subtitle)
 
 # ========== DATA LOAD ==========
+# ========== DATA LOAD ==========
 st.title("📊 Salesforce KPI Report")
 st.markdown("Performance comparison of **Pre vs Post Go-Live**, with Test vs Control context. Use the filters to explore KPIs across branches and districts.")
 
@@ -120,22 +121,22 @@ with st.sidebar:
     st.header("📁 Data")
     kpi_file = st.file_uploader("KPI Summary (Excel)", type=["xlsx"], key="kpi_file")
     branch_file = st.file_uploader("Branch Summary (Excel)", type=["xlsx"], key="branch_file")
-    st.caption("If you don't upload files, the app will look for **KPI_Summary.xlsx** and **Branch_Summary.xlsx** in the current folder.")
+    st.caption("If you don't upload files, the app will look for **KPI_Summary.xlsx**, **Branch_Summary.xlsx**, and **Daily_KPI.xlsx** in the current folder.")
 
 try:
-    kpi_summary = load_excel(kpi_file) if kpi_file else load_excel("T:\Risk\!Data Science\Personal Folder\Methan Ouattara\Salesforce Daily Monitoring\KPI_Summary.xlsx")
-    branch_summary = load_excel(branch_file) if branch_file else load_excel("T:\Risk\!Data Science\Personal Folder\Methan Ouattara\Salesforce Daily Monitoring\Branch_Summary.xlsx")
+    # Look in current folder if no upload
+    kpi_summary = load_excel(kpi_file) if kpi_file else load_excel("KPI_Summary.xlsx")
+    branch_summary = load_excel(branch_file) if branch_file else load_excel("Branch_Summary.xlsx")
 except Exception as e:
     st.error(f"Could not load data. Please upload the Excel files or place KPI_Summary.xlsx and Branch_Summary.xlsx in this folder.\n\nError: {e}")
     st.stop()
 
 try:
-    daily_kpi = load_excel("T:\\Risk\\!Data Science\\Personal Folder\\Methan Ouattara\\Salesforce Daily Monitoring\\Daily_KPI.xlsx")
+    daily_kpi = load_excel("Daily_KPI.xlsx")
     daily_kpi["CalendarDate"] = pd.to_datetime(daily_kpi["CalendarDate"])
 except Exception:
     daily_kpi = pd.DataFrame()
     st.warning("⚠️ No Daily_KPI.xlsx found. KPI-over-time tracking will be disabled.")
-
 
 # Basic hygiene
 for col in ["KPI", "Branch", "District", "Group", "Golive"]:
@@ -153,6 +154,7 @@ kpi_summary["KPI_Label"] = kpi_summary["KPI"].map(KPI_LABELS).fillna(kpi_summary
 # Parse dates
 branch_summary["Golive"] = ensure_datetime(branch_summary["Golive"])
 branch_summary["Golive_str"] = branch_summary["Golive"].dt.strftime("%Y-%m-%d").fillna("")
+
 
 
 def prettify_columns(cols):
@@ -559,3 +561,4 @@ with st.expander("ℹ️ Methodology & Definitions"):
 """)
 
 st.caption("© Salesforce KPI Report • Built with Streamlit + Plotly")
+
