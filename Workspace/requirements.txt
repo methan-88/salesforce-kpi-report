@@ -1,0 +1,4 @@
+# Add required Python packages here, e.g.:
+pandas
+requests
+openpyxl
