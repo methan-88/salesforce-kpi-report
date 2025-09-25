@@ -364,24 +364,28 @@ tab_overview, tab_kpi, tab_district = st.tabs(["Overview", "KPI Explorer", "Dist
 
 # ---------- OVERVIEW TAB ----------
 
+# ---------- OVERVIEW TAB ----------
 with tab_overview:
-    section_header("KPI Overview", "How did each KPI move overall? Showing Pre/Post averages, changes, and statistical tests.")
-    
-    # "KPI", "DiD",
-    # Exact columns you want to show
+    section_header(
+        "KPI Overview",
+        "How did each KPI move overall? Showing Pre/Post averages, % changes, and statistical tests."
+    )
+
+    # Include new percent change columns
     overview_cols = [
         "KPI_Label",
         "Pre_Test_Mean", "Pre_Control_Mean",
         "Post_Test_Mean", "Post_Control_Mean",
         "Change_Test_Mean", "Change_Control_Mean",
-        "Diff_in_Change", "tstat", "pval", "Significant"
+        "Diff_in_Change", "%Change_Test", "%Change_Control", "%Change_Diff",
+        "Direction",  # 👈 optional, if you want the ↑ / ↓ indicator
+        "tstat", "pval", "Significant"
     ]
     present_cols = [c for c in overview_cols if c in kpi_summary.columns]
     overview = kpi_summary[present_cols].copy()
 
-    # Inline rename mapping (no underscores, exec-friendly)
+    # Inline rename mapping
     col_map = {
-        # "KPI": "KPI (Internal Code)",
         "KPI_Label": "KPI",
         "Pre_Test_Mean": "Pre Test Mean",
         "Pre_Control_Mean": "Pre Control Mean",
@@ -390,35 +394,34 @@ with tab_overview:
         "Change_Test_Mean": "Change Test Mean",
         "Change_Control_Mean": "Change Control Mean",
         "Diff_in_Change": "Difference in Change",
-        # "DiD": "Difference in Differences (DiD)",
+        "%Change_Test": "% Change (Test)",
+        "%Change_Control": "% Change (Control)",
+        "%Change_Diff": "% Change Difference",
+        "Direction": "Direction",
         "tstat": "t-Statistic",
         "pval": "p-Value",
         "Significant": "Statistically Significant?"
     }
     overview_display = overview.rename(columns=col_map)
 
-    # 👇 Custom order: put LPE and Avg Loan Size first, then others sorted by p-value
+    # Custom order: LPE and Avg Loan Size first, then others sorted
     priority_kpis = ["Loans per Employee", "Average Loan Size"]
     overview_display["KPI_order"] = overview_display["KPI"].apply(
         lambda x: 0 if x == "Loans per Employee" else (1 if x == "Average Loan Size" else 2)
     )
-    # KPI
 
-    if "KPI" in overview_display.columns:
+    if "p-Value" in overview_display.columns:
         overview_display = overview_display.sort_values(
             by=["KPI_order", "p-Value"], ascending=[True, True]
-        )
-    elif "p-Value" in overview_display.columns:
-        overview_display = overview_display.sort_values(
-            by=["KPI_order", "Difference in Differences (DiD)"], ascending=[True, False]
         )
     else:
         overview_display = overview_display.sort_values(by="KPI_order", ascending=True)
 
     overview_display = overview_display.drop(columns="KPI_order")
 
-    # Show table
+    # Display
     st.dataframe(overview_display.reset_index(drop=True), use_container_width=True)
+
 
     # Download buttons
     c1, c2 = st.columns(2)
