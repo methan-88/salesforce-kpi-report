@@ -143,6 +143,30 @@ def prettify_columns(cols):
     return mapping
 
 
+def format_exec_overview(df):
+    formatted = df.copy()
+
+    for col in formatted.columns:
+        if any(k in col for k in ["Loan Size", "Amount", "Balance"]):
+            formatted[col] = formatted[col].apply(lambda x: f"${x:,.0f}" if pd.notnull(x) else "—")
+        elif col.startswith("%"):
+            formatted[col] = formatted[col].apply(lambda x: f"{x:.1f}%" if pd.notnull(x) else "—")
+        elif "Mean" in col or "Change" in col or "Difference" in col or "DiD" in col:
+            formatted[col] = formatted[col].apply(lambda x: f"{x:,.2f}" if pd.notnull(x) else "—")
+        elif "t-Statistic" in col or "p-Value" in col:
+            formatted[col] = formatted[col].apply(lambda x: f"{x:.3f}" if pd.notnull(x) else "—")
+    return formatted
+
+
+def style_direction(val):
+    if "Better" in str(val):
+        return "color: green; font-weight: bold;"
+    elif "Worse" in str(val):
+        return "color: red; font-weight: bold;"
+    return ""
+
+
+
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
@@ -521,20 +545,17 @@ with tab_overview:
         "How did each KPI move overall? Showing Pre/Post averages, % changes, and statistical tests."
     )
 
-    # Include new percent change columns
     overview_cols = [
         "KPI_Label",
         "Pre_Test_Mean", "Pre_Control_Mean",
         "Post_Test_Mean", "Post_Control_Mean",
         "Change_Test_Mean", "Change_Control_Mean",
         "Diff_in_Change", "%Change_Test", "%Change_Control", "%Change_Diff",
-        "Direction",  # 👈 optional, if you want the ↑ / ↓ indicator
-        "tstat", "pval", "Significant"
+        "Direction", "tstat", "pval", "Significant"
     ]
     present_cols = [c for c in overview_cols if c in kpi_summary.columns]
     overview = kpi_summary[present_cols].copy()
 
-    # Inline rename mapping
     col_map = {
         "KPI_Label": "KPI",
         "Pre_Test_Mean": "Pre Test Mean",
@@ -554,31 +575,33 @@ with tab_overview:
     }
     overview_display = overview.rename(columns=col_map)
 
-    # Custom order: LPE and Avg Loan Size first, then others sorted
     priority_kpis = ["Loans per Employee", "Average Loan Size"]
     overview_display["KPI_order"] = overview_display["KPI"].apply(
         lambda x: 0 if x == "Loans per Employee" else (1 if x == "Average Loan Size" else 2)
     )
-
     if "p-Value" in overview_display.columns:
         overview_display = overview_display.sort_values(
             by=["KPI_order", "p-Value"], ascending=[True, True]
         )
     else:
         overview_display = overview_display.sort_values(by="KPI_order", ascending=True)
-
     overview_display = overview_display.drop(columns="KPI_order")
 
-    # Display
-    st.dataframe(overview_display.reset_index(drop=True), use_container_width=True)
+    # Format for exec readability
+    overview_formatted = format_exec_overview(overview_display.reset_index(drop=True))
 
+    # Apply conditional style
+    styled = overview_formatted.style.applymap(style_direction, subset=["Direction"])
 
-    # Download buttons
+    # Display styled dataframe
+    st.dataframe(styled, use_container_width=True)
+
+    # Download buttons (still use raw formatted table, not Styler)
     c1, c2 = st.columns(2)
     with c1:
         st.download_button(
             "📥 Download KPI Overview (CSV)",
-            data=bytes_csv(overview_display),
+            data=bytes_csv(overview_formatted),
             file_name="kpi_overview.csv",
             mime="text/csv",
             use_container_width=True
@@ -586,7 +609,7 @@ with tab_overview:
     with c2:
         st.download_button(
             "📥 Download KPI Overview (Excel)",
-            data=bytes_xlsx(overview_display),
+            data=bytes_xlsx(overview_formatted),
             file_name="kpi_overview.xlsx",
             use_container_width=True
         )
