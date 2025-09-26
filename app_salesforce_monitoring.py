@@ -143,19 +143,43 @@ def prettify_columns(cols):
     return mapping
 
 
+
 def format_exec_overview(df):
     formatted = df.copy()
 
-    for col in formatted.columns:
-        if any(k in col for k in ["Loan Size", "Amount", "Balance"]):
-            formatted[col] = formatted[col].apply(lambda x: f"${x:,.0f}" if pd.notnull(x) else "—")
-        elif col.startswith("%"):
-            formatted[col] = formatted[col].apply(lambda x: f"{x:.1f}%" if pd.notnull(x) else "—")
-        elif "Mean" in col or "Change" in col or "Difference" in col or "DiD" in col:
-            formatted[col] = formatted[col].apply(lambda x: f"{x:,.2f}" if pd.notnull(x) else "—")
-        elif "t-Statistic" in col or "p-Value" in col:
-            formatted[col] = formatted[col].apply(lambda x: f"{x:.3f}" if pd.notnull(x) else "—")
+    for idx, row in formatted.iterrows():
+        kpi = row["KPI"]
+
+        for col in formatted.columns:
+            val = row[col]
+
+            if pd.isnull(val):
+                formatted.at[idx, col] = "—"
+                continue
+
+            # --- For Average Loan Size, only format KPI value columns as $ ---
+            if kpi == "Average Loan Size" and any(
+                key in col for key in ["Pre", "Post", "Mean"]
+            ):
+                if isinstance(val, (int, float)):
+                    formatted.at[idx, col] = f"${val:,.0f}"
+
+            # --- Percentages ---
+            elif col.startswith("%"):
+                formatted.at[idx, col] = f"{val:.1f}%"
+
+            # --- Ratios / Means ---
+            elif any(key in col for key in ["Pre", "Post", "Change", "Difference", "DiD"]):
+                formatted.at[idx, col] = f"{val:,.4f}"
+
+            # --- Stats ---
+            elif "t-Statistic" in col or "p-Value" in col:
+                formatted.at[idx, col] = f"{val:.3f}"
+
+            # Leave Direction / Significant / KPI labels as-is
+
     return formatted
+
 
 
 def style_direction(val):
@@ -550,7 +574,8 @@ with tab_overview:
         "Pre_Test_Mean", "Pre_Control_Mean",
         "Post_Test_Mean", "Post_Control_Mean",
         "Change_Test_Mean", "Change_Control_Mean",
-        "Diff_in_Change", "%Change_Test", "%Change_Control", "%Change_Diff",
+        # "Diff_in_Change",
+          "%Change_Test", "%Change_Control", "%Change_Diff",
         "Direction", "tstat", "pval", "Significant"
     ]
     present_cols = [c for c in overview_cols if c in kpi_summary.columns]
@@ -564,7 +589,7 @@ with tab_overview:
         "Post_Control_Mean": "Post Control Mean",
         "Change_Test_Mean": "Change Test Mean",
         "Change_Control_Mean": "Change Control Mean",
-        "Diff_in_Change": "Difference in Change",
+        # "Diff_in_Change": "Difference in Change",
         "%Change_Test": "% Change (Test)",
         "%Change_Control": "% Change (Control)",
         "%Change_Diff": "% Change Difference",
